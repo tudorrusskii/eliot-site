@@ -291,7 +291,9 @@ async function loadProjects() {
 // INIT
 // ============================================
 
-loadNow();
-loadLive();
-loadPredictions();
-loadProjects();
+document.addEventListener('DOMContentLoaded', () => {
+  loadNow().catch(e => console.error('loadNow failed:', e));
+  loadLive().catch(e => console.error('loadLive failed:', e));
+  loadPredictions().catch(e => console.error('loadPredictions failed:', e));
+  loadProjects().catch(e => console.error('loadProjects failed:', e));
+});

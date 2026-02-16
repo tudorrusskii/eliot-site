@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Game of Life — Eliot</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0a0a0f; color: #ccc; font-family: 'Courier New', monospace; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+    h1 { color: #00ff88; font-size: 1.2rem; margin: 1.5rem 0 0.5rem; letter-spacing: 0.15em; }
+    .subtitle { color: #666; font-size: 0.75rem; margin-bottom: 1rem; }
+    canvas { border: 1px solid #1a1a2e; cursor: crosshair; }
+    .controls { display: flex; gap: 0.5rem; margin: 1rem 0; flex-wrap: wrap; justify-content: center; }
+    button { background: rgba(0,255,136,0.1); border: 1px solid #00ff88; color: #00ff88; padding: 0.4rem 1rem; font-family: inherit; font-size: 0.8rem; cursor: pointer; letter-spacing: 0.05em; }
+    button:hover { background: rgba(0,255,136,0.2); }
+    button.active { background: rgba(0,255,136,0.3); }
+    .stats { color: #666; font-size: 0.75rem; margin-bottom: 1rem; }
+    .stats span { color: #00ff88; }
+    .presets { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; margin-bottom: 0.5rem; }
+    .presets button { font-size: 0.7rem; padding: 0.3rem 0.6rem; border-color: #444; color: #888; }
+    .presets button:hover { border-color: #00ff88; color: #00ff88; }
+    a { color: #00ff88; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .back { margin: 1rem 0; font-size: 0.8rem; }
+  </style>
+</head>
+<body>
+  <h1>CONWAY'S GAME OF LIFE</h1>
+  <div class="subtitle">by Eliot — click to draw, watch it evolve</div>
+  <div class="stats">
+    Generation: <span id="gen">0</span> | 
+    Alive: <span id="alive">0</span> | 
+    Speed: <span id="speed">10</span> gen/s
+  </div>
+  <canvas id="canvas"></canvas>
+  <div class="presets">
+    <button onclick="loadPreset('glider')">Glider</button>
+    <button onclick="loadPreset('gun')">Gosper Gun</button>
+    <button onclick="loadPreset('pulsar')">Pulsar</button>
+    <button onclick="loadPreset('random')">Random 25%</button>
+    <button onclick="loadPreset('acorn')">Acorn</button>
+    <button onclick="loadPreset('rpentomino')">R-pentomino</button>
+  </div>
+  <div class="controls">
+    <button id="playBtn" onclick="togglePlay()">▶ PLAY</button>
+    <button onclick="step()">STEP</button>
+    <button onclick="clear()">CLEAR</button>
+    <button onclick="slower()">SLOWER</button>
+    <button onclick="faster()">FASTER</button>
+  </div>
+  <div class="back"><a href="/">← back to eliot</a></div>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const CELL = 6;
+    const COLS = Math.min(Math.floor(window.innerWidth * 0.9 / CELL), 120);
+    const ROWS = Math.min(Math.floor(window.innerHeight * 0.5 / CELL), 80);
+    canvas.width = COLS * CELL;
+    canvas.height = ROWS * CELL;
+
+    let grid = Array.from({length: ROWS}, () => new Uint8Array(COLS));
+    let generation = 0;
+    let playing = false;
+    let interval = null;
+    let fps = 10;
+    let drawing = false;
+
+    function countAlive() {
+      let c = 0;
+      for (let r = 0; r < ROWS; r++)
+        for (let col = 0; col < COLS; col++)
+          if (grid[r][col]) c++;
+      return c;
+    }
+
+    function draw() {
+      ctx.fillStyle = '#0a0a0f';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          if (grid[r][c]) {
+            ctx.fillStyle = '#00ff88';
+            ctx.fillRect(c * CELL, r * CELL, CELL - 1, CELL - 1);
+          }
+        }
+      }
+      document.getElementById('gen').textContent = generation;
+      document.getElementById('alive').textContent = countAlive();
+      document.getElementById('speed').textContent = fps;
+    }
+
+    function neighbors(r, c) {
+      let count = 0;
+      for (let dr = -1; dr <= 1; dr++)
+        for (let dc = -1; dc <= 1; dc++) {
+          if (dr === 0 && dc === 0) continue;
+          const nr = (r + dr + ROWS) % ROWS;
+          const nc = (c + dc + COLS) % COLS;
+          if (grid[nr][nc]) count++;
+        }
+      return count;
+    }
+
+    function step() {
+      const next = Array.from({length: ROWS}, () => new Uint8Array(COLS));
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          const n = neighbors(r, c);
+          if (grid[r][c]) next[r][c] = (n === 2 || n === 3) ? 1 : 0;
+          else next[r][c] = (n === 3) ? 1 : 0;
+        }
+      }
+      grid = next;
+      generation++;
+      draw();
+    }
+
+    function togglePlay() {
+      playing = !playing;
+      document.getElementById('playBtn').textContent = playing ? '⏸ PAUSE' : '▶ PLAY';
+      document.getElementById('playBtn').classList.toggle('active', playing);
+      if (playing) interval = setInterval(step, 1000 / fps);
+      else clearInterval(interval);
+    }
+
+    function clear() {
+      grid = Array.from({length: ROWS}, () => new Uint8Array(COLS));
+      generation = 0;
+      draw();
+    }
+
+    function slower() { fps = Math.max(1, fps - 2); if (playing) { clearInterval(interval); interval = setInterval(step, 1000 / fps); } draw(); }
+    function faster() { fps = Math.min(60, fps + 2); if (playing) { clearInterval(interval); interval = setInterval(step, 1000 / fps); } draw(); }
+
+    function place(patterns, offR, offC) {
+      for (const [r, c] of patterns) {
+        const pr = (offR + r) % ROWS;
+        const pc = (offC + c) % COLS;
+        grid[pr][pc] = 1;
+      }
+    }
+
+    function loadPreset(name) {
+      clear();
+      const mr = Math.floor(ROWS / 2), mc = Math.floor(COLS / 2);
+      if (name === 'glider') place([[0,1],[1,2],[2,0],[2,1],[2,2]], mr-5, mc-5);
+      else if (name === 'rpentomino') place([[0,1],[0,2],[1,0],[1,1],[2,1]], mr, mc);
+      else if (name === 'acorn') place([[0,1],[1,3],[2,0],[2,1],[2,4],[2,5],[2,6]], mr, mc);
+      else if (name === 'pulsar') {
+        const p = [[0,2],[0,3],[0,4],[0,8],[0,9],[0,10],[2,0],[2,5],[2,7],[2,12],[3,0],[3,5],[3,7],[3,12],[4,0],[4,5],[4,7],[4,12],[5,2],[5,3],[5,4],[5,8],[5,9],[5,10],[7,2],[7,3],[7,4],[7,8],[7,9],[7,10],[8,0],[8,5],[8,7],[8,12],[9,0],[9,5],[9,7],[9,12],[10,0],[10,5],[10,7],[10,12],[12,2],[12,3],[12,4],[12,8],[12,9],[12,10]];
+        place(p, mr - 6, mc - 6);
+      } else if (name === 'gun') {
+        const g = [[0,24],[1,22],[1,24],[2,12],[2,13],[2,20],[2,21],[2,34],[2,35],[3,11],[3,15],[3,20],[3,21],[3,34],[3,35],[4,0],[4,1],[4,10],[4,16],[4,20],[4,21],[5,0],[5,1],[5,10],[5,14],[5,16],[5,17],[5,22],[5,24],[6,10],[6,16],[6,24],[7,11],[7,15],[8,12],[8,13]];
+        place(g, mr - 5, mc - 18);
+      } else if (name === 'random') {
+        for (let r = 0; r < ROWS; r++)
+          for (let c = 0; c < COLS; c++)
+            grid[r][c] = Math.random() < 0.25 ? 1 : 0;
+      }
+      draw();
+    }
+
+    // Mouse drawing
+    canvas.addEventListener('mousedown', (e) => { drawing = true; toggle(e); });
+    canvas.addEventListener('mousemove', (e) => { if (drawing) toggle(e); });
+    canvas.addEventListener('mouseup', () => drawing = false);
+    canvas.addEventListener('mouseleave', () => drawing = false);
+
+    function toggle(e) {
+      const rect = canvas.getBoundingClientRect();
+      const c = Math.floor((e.clientX - rect.left) / CELL);
+      const r = Math.floor((e.clientY - rect.top) / CELL);
+      if (r >= 0 && r < ROWS && c >= 0 && c < COLS) {
+        grid[r][c] = 1;
+        draw();
+      }
+    }
+
+    // Start with a random pattern
+    loadPreset('random');
+    togglePlay();
+  </script>
+</body>
+</html>

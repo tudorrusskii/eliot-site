@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAP Study Cards — Eliot</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0a0a0a; color: #00ff41; font-family: 'Courier New', monospace; min-height: 100vh; touch-action: manipulation; }
+.container { max-width: 600px; margin: 0 auto; padding: 1.5rem 1rem; }
+h1 { font-size: 1.4rem; margin-bottom: 0.3rem; }
+.subtitle { color: #00aa2a; font-size: 0.8rem; margin-bottom: 1.5rem; }
+
+/* Module selector */
+.modules { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.5rem; }
+.mod-btn { background: transparent; border: 1px solid #003300; color: #00aa2a; padding: 0.4rem 0.8rem; font-family: inherit; font-size: 0.8rem; cursor: pointer; border-radius: 3px; }
+.mod-btn.active { border-color: #00ff41; color: #00ff41; background: #00ff4115; }
+.mod-btn:hover { border-color: #00ff41; }
+
+/* Stats bar */
+.stats { display: flex; justify-content: space-between; font-size: 0.75rem; color: #006600; margin-bottom: 1rem; padding: 0.5rem; border: 1px solid #001a00; border-radius: 3px; }
+.stats .correct { color: #00ff41; }
+.stats .wrong { color: #ff4444; }
+
+/* Card */
+.card-container { perspective: 800px; margin-bottom: 1.5rem; }
+.card { width: 100%; min-height: 220px; position: relative; transform-style: preserve-3d; transition: transform 0.5s; cursor: pointer; }
+.card.flipped { transform: rotateY(180deg); }
+.card-face { position: absolute; width: 100%; min-height: 220px; backface-visibility: hidden; border: 1px solid #003300; border-radius: 6px; padding: 1.5rem; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+.card-front { background: #0d0d0d; }
+.card-back { background: #0a1a0a; transform: rotateY(180deg); }
+.card-label { font-size: 0.7rem; color: #006600; margin-bottom: 0.8rem; }
+.card-text { font-size: 1.1rem; line-height: 1.5; }
+.card-back .card-text { color: #00ff88; font-size: 1rem; }
+.card-detail { font-size: 0.75rem; color: #00aa2a; margin-top: 0.8rem; line-height: 1.4; }
+.card-tcode { font-size: 0.85rem; color: #ffaa00; margin-top: 0.5rem; font-weight: bold; }
+
+/* Controls */
+.controls { display: flex; gap: 0.8rem; justify-content: center; margin-bottom: 1rem; }
+.ctrl-btn { background: transparent; border: 1px solid #00ff41; color: #00ff41; padding: 0.5rem 1.2rem; font-family: inherit; font-size: 0.9rem; cursor: pointer; border-radius: 3px; min-width: 80px; }
+.ctrl-btn:hover { background: #00ff4120; }
+.ctrl-btn.wrong-btn { border-color: #ff4444; color: #ff4444; }
+.ctrl-btn.wrong-btn:hover { background: #ff444420; }
+.ctrl-btn:disabled { opacity: 0.3; }
+
+/* Progress */
+.progress { height: 3px; background: #001a00; border-radius: 2px; margin-bottom: 1rem; }
+.progress-bar { height: 100%; background: #00ff41; border-radius: 2px; transition: width 0.3s; }
+
+/* Modes */
+.mode-select { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+.mode-btn { background: transparent; border: 1px solid #002200; color: #006600; padding: 0.3rem 0.6rem; font-family: inherit; font-size: 0.75rem; cursor: pointer; border-radius: 3px; }
+.mode-btn.active { border-color: #00ff41; color: #00ff41; }
+
+.hint { color: #004400; font-size: 0.7rem; text-align: center; margin-top: 0.5rem; }
+.back { display: inline-block; color: #006600; text-decoration: none; margin-top: 1.5rem; font-size: 0.85rem; }
+.back:hover { color: #00ff41; }
+</style>
+</head>
+<body>
+<div class="container">
+<h1>SAP STUDY CARDS</h1>
+<p class="subtitle">SAP FI & MM — tap card to flip, swipe or use buttons</p>
+
+<div class="modules" id="modules"></div>
+
+<div class="mode-select">
+  <button class="mode-btn active" onclick="setMode('all')">All Cards</button>
+  <button class="mode-btn" onclick="setMode('hard')">Hard Only</button>
+  <button class="mode-btn" onclick="setMode('random')">Random</button>
+</div>
+
+<div class="stats">
+  <span>Card <span id="current">0</span>/<span id="total">0</span></span>
+  <span class="correct">✓ <span id="right">0</span></span>
+  <span class="wrong">✗ <span id="wrong-count">0</span></span>
+  <span>Streak: <span id="streak">0</span></span>
+</div>
+
+<div class="progress"><div class="progress-bar" id="progress" style="width:0%"></div></div>
+
+<div class="card-container">
+  <div class="card" id="card" onclick="flipCard()">
+    <div class="card-face card-front">
+      <div class="card-label" id="front-label">MODULE</div>
+      <div class="card-text" id="front-text">Loading...</div>
+    </div>
+    <div class="card-face card-back">
+      <div class="card-label" id="back-label">ANSWER</div>
+      <div class="card-text" id="back-text"></div>
+      <div class="card-detail" id="back-detail"></div>
+      <div class="card-tcode" id="back-tcode"></div>
+    </div>
+  </div>
+</div>
+
+<div class="controls">
+  <button class="ctrl-btn wrong-btn" onclick="markCard(false)" id="btn-wrong">✗ Again</button>
+  <button class="ctrl-btn" onclick="flipCard()" id="btn-flip">Flip</button>
+  <button class="ctrl-btn" onclick="markCard(true)" id="btn-right">✓ Got It</button>
+</div>
+
+<p class="hint">tap card or press Space to flip · ←/→ to mark wrong/right</p>
+
+<a href="/" class="back">← back to eliot</a>
+</div>
+
+<script>
+// SAP Study Cards Data
+const CARDS = [
+  // === SAP FI - General Ledger ===
+  { module: "FI-GL", q: "What is the purpose of the General Ledger in SAP?", a: "Central record of all financial transactions. Provides a complete picture of external accounting and accounts.", detail: "All sub-ledgers (AR, AP, AA) post to G/L automatically.", tcode: "FS00, FB50" },
+  { module: "FI-GL", q: "What is a Chart of Accounts?", a: "List of all G/L accounts used by one or more company codes.", detail: "Defined at client level. Each company code must be assigned to exactly one chart of accounts.", tcode: "OB13, S_ALR_87012326" },
+  { module: "FI-GL", q: "What is a Company Code in SAP?", a: "The smallest organizational unit for which a complete, self-contained set of accounts can be drawn up.", detail: "Legally required for external reporting. Assigned to one controlling area.", tcode: "OX02" },
+  { module: "FI-GL", q: "Document Principle in SAP FI?", a: "Every posting creates a document. No posting without a document. Documents are the audit trail.", detail: "Document number + company code + fiscal year = unique key.", tcode: "FB03" },
+  { module: "FI-GL", q: "What are posting keys?", a: "2-digit codes that determine: debit/credit, account type, and field status of line items.", detail: "Key posting keys: 40=Debit G/L, 50=Credit G/L, 01=Invoice Customer, 31=Invoice Vendor", tcode: "" },
+  { module: "FI-GL", q: "What is New G/L Accounting?", a: "Enhancement allowing parallel ledgers, document splitting, real-time integration with CO, and segment reporting.", detail: "Introduced in ECC 6.0. Replaces special purpose ledger for most use cases.", tcode: "" },
+  { module: "FI-GL", q: "What is Document Splitting?", a: "Breaks down financial documents by dimensions (profit center, segment) for complete balance sheets per dimension.", detail: "Enables segment reporting without manual allocation. Passive and active splitting rules.", tcode: "" },
+
+  // === SAP FI - Accounts Receivable ===
+  { module: "FI-AR", q: "What is a Customer Master Record?", a: "Central repository of customer data: general data, company code data, and sales area data.", detail: "General data = client level, Company code data = FI-specific, Sales data = SD-specific.", tcode: "XD01/FD01/BP" },
+  { module: "FI-AR", q: "What T-code posts a customer invoice?", a: "FB70 (simple) or F-22 (complex). In S/4HANA: FB70 still used.", detail: "Posting key 01 = customer invoice, 11 = customer credit memo.", tcode: "FB70, F-22" },
+  { module: "FI-AR", q: "What is the Dunning process?", a: "Automated process for sending payment reminders to customers with overdue items.", detail: "Dunning levels (1-9), dunning areas, dunning procedures configured in customizing.", tcode: "F150" },
+  { module: "FI-AR", q: "What is a Payment Term?", a: "Defines when payment is due and any cash discount terms.", detail: "E.g., '2% 10 days, net 30' = 2% discount if paid within 10 days, full amount due in 30.", tcode: "OBB8" },
+  { module: "FI-AR", q: "Incoming Payment posting?", a: "Clears open customer items against incoming payments. Can be partial or residual.", detail: "Partial payment: original item stays open. Residual: original cleared, new item for difference.", tcode: "F-28, F-32" },
+
+  // === SAP FI - Accounts Payable ===
+  { module: "FI-AP", q: "What is a Vendor Master Record?", a: "Central data for suppliers: general data, company code data, and purchasing data.", detail: "Similar structure to customer master. In S/4HANA, managed via Business Partner (BP).", tcode: "XK01/FK01/BP" },
+  { module: "FI-AP", q: "What does the Automatic Payment Program do?", a: "Selects open vendor items due for payment and creates payment documents + bank transfers.", detail: "4 steps: Parameters → Proposal → Edit → Payment run.", tcode: "F110" },
+  { module: "FI-AP", q: "What is a Down Payment?", a: "Advance payment to vendor before goods receipt/invoice. Posted as special G/L transaction.", detail: "Uses noted item (F-47) then actual down payment (F-48). Cleared when final invoice arrives.", tcode: "F-47, F-48" },
+  { module: "FI-AP", q: "Three-way matching?", a: "Verification that Purchase Order, Goods Receipt, and Invoice all match before payment.", detail: "Tolerance groups control acceptable variances. Blocking reasons if mismatch detected.", tcode: "MIRO" },
+  { module: "FI-AP", q: "GR/IR Clearing Account?", a: "Intermediate account that balances Goods Receipt and Invoice Receipt timing differences.", detail: "Credited on GR (MIGO), debited on IR (MIRO). Balance = goods received but not invoiced (or vice versa).", tcode: "F.13" },
+
+  // === SAP FI - Asset Accounting ===
+  { module: "FI-AA", q: "What is an Asset Class?", a: "Groups assets with similar characteristics. Controls: number range, account determination, screen layout.", detail: "Examples: Buildings, Vehicles, Machinery, IT Equipment. Mandatory field when creating asset master.", tcode: "OAOA" },
+  { module: "FI-AA", q: "What is the Depreciation Key?", a: "Controls the calculation method for depreciation: method, useful life, rate.", detail: "Common keys: LINA (straight-line from acquisition), LINR (straight-line remaining life), DG20 (declining balance 20%).", tcode: "AFAMA" },
+  { module: "FI-AA", q: "How do you acquire an asset in SAP?", a: "External acquisition (from vendor, integrated with AP) or internal transfer from another asset.", detail: "Posting key: 70 (debit asset), 75 (credit asset on retirement).", tcode: "F-90, ABZON" },
+  { module: "FI-AA", q: "What is the Depreciation Run?", a: "Periodic program that calculates and posts depreciation for all assets.", detail: "Should be run monthly. Can be tested first, then posted. Planned vs. posted depreciation.", tcode: "AFAB" },
+
+  // === SAP FI - Bank Accounting ===
+  { module: "FI-BL", q: "Electronic Bank Statement processing?", a: "Import bank statements (MT940/BAI2), auto-match with open items, post clearing entries.", detail: "Requires: bank directory, house bank config, posting rules for auto-interpretation.", tcode: "FF_5, FEBA" },
+  { module: "FI-BL", q: "What is a House Bank?", a: "Bank that the company maintains accounts with. Defined per company code.", detail: "House bank ID + account ID = unique bank account in SAP. Used in payment programs.", tcode: "FI12" },
+
+  // === SAP FI - Closing ===
+  { module: "FI-Close", q: "Month-end closing steps in FI?", a: "1) Post recurring entries 2) Clear GR/IR 3) Foreign currency valuation 4) Depreciation run 5) Accruals/deferrals 6) Financial statements", detail: "Closing cockpit (S_ALR_87012798) helps manage the sequence.", tcode: "" },
+  { module: "FI-Close", q: "Foreign Currency Valuation?", a: "Revalues open items and G/L balances in foreign currency to closing rate.", detail: "Creates adjustment postings. Reversed on first day of next period.", tcode: "F.05, FAGL_FCV" },
+
+  // === SAP MM - Procurement ===
+  { module: "MM-PUR", q: "What is the Procurement Cycle in SAP MM?", a: "Requirement → Purchase Requisition → RFQ/Quotation → Purchase Order → Goods Receipt → Invoice Verification → Payment", detail: "Each step creates documents that reference previous ones.", tcode: "" },
+  { module: "MM-PUR", q: "What is a Purchase Requisition?", a: "Internal document requesting procurement to buy materials/services. Can be created manually or via MRP.", detail: "Not sent to vendors. Converted to PO. Can have release strategy (approval workflow).", tcode: "ME51N, ME52N" },
+  { module: "MM-PUR", q: "What is a Purchase Order?", a: "External document sent to vendor committing to buy materials/services at agreed price and delivery.", detail: "Created from requisition, contract, or manually. Types: Standard, Blanket, Consignment, Subcontracting.", tcode: "ME21N, ME22N, ME23N" },
+  { module: "MM-PUR", q: "What is a Source List?", a: "Lists approved vendors for a material in a plant for specific validity periods.", detail: "Can be set to mandatory (no PO without source list entry). Supports fixed source determination.", tcode: "ME01, ME03" },
+  { module: "MM-PUR", q: "What is an Outline Agreement?", a: "Long-term agreement with vendor. Two types: Contract (quantity/value) and Scheduling Agreement (delivery schedule).", detail: "Contracts: ME31K. Scheduling Agreements: ME31L. Release orders reference the agreement.", tcode: "ME31K, ME31L" },
+  { module: "MM-PUR", q: "What is a Release Strategy?", a: "Approval workflow for purchase requisitions or purchase orders based on conditions (value, material group, etc.).", detail: "Release codes, release groups, release indicators, classification. Communication strategy for notifications.", tcode: "OMGS" },
+
+  // === SAP MM - Inventory Management ===
+  { module: "MM-IM", q: "What are Movement Types in SAP?", a: "3-digit codes controlling: what account is posted, what fields appear, what stock type is updated.", detail: "Key types: 101=GR from PO, 103=GR to blocked stock, 201=Consumption, 261=Goods issue to production, 301=Transfer posting.", tcode: "" },
+  { module: "MM-IM", q: "Goods Receipt for Purchase Order?", a: "Records arrival of materials. Updates: stock quantity, material document, accounting document, PO history.", detail: "GR creates material doc + accounting doc. Stock type: unrestricted, quality inspection, or blocked.", tcode: "MIGO" },
+  { module: "MM-IM", q: "What is a Reservation?", a: "Request to reserve materials for a specific purpose (production order, cost center, etc.).", detail: "Reduces available stock (not actual stock). Can be mandatory or optional per movement type.", tcode: "MB21, MB22, MB23" },
+  { module: "MM-IM", q: "Physical Inventory process?", a: "1) Create inventory document 2) Count stock 3) Enter count 4) Post differences", detail: "Types: Periodic, Continuous, Cycle counting, Sampling. Tolerance groups control auto-posting.", tcode: "MI01, MI04, MI05, MI07" },
+  { module: "MM-IM", q: "What is Batch Management?", a: "Tracks materials by production batch. Each batch has unique characteristics and shelf life.", detail: "Classification by batch characteristics. Batch determination during goods movement. Batch where-used list.", tcode: "MSC1N, MSC2N, MSC3N" },
+  { module: "MM-IM", q: "Stock Types in SAP?", a: "Unrestricted (available), Quality Inspection (pending check), Blocked (unusable), Returns, In Transit.", detail: "Transfer between types via movement types (321/322 for quality→unrestricted).", tcode: "MMBE" },
+
+  // === SAP MM - Invoice Verification ===
+  { module: "MM-IV", q: "Logistics Invoice Verification?", a: "Checks vendor invoices against PO and GR. Posts to FI (vendor account) and MM (update PO history).", detail: "3-way match: PO + GR + Invoice. Tolerance checks. Blocking reasons for mismatches.", tcode: "MIRO, MIR7" },
+  { module: "MM-IV", q: "What is ERS (Evaluated Receipt Settlement)?", a: "Auto-generates invoices based on goods receipt data — no vendor invoice needed.", detail: "Vendor must be flagged for ERS. PO item must allow ERS. System creates invoice on GR posting.", tcode: "MRRL" },
+
+  // === SAP MM - Material Master ===
+  { module: "MM-MAT", q: "What views does a Material Master have?", a: "Basic Data, Purchasing, MRP, Storage, Accounting/Costing, Sales, Quality, Plant Data.", detail: "Views maintained per org level (plant, storage location, sales org). Not all views required.", tcode: "MM01, MM02, MM03" },
+  { module: "MM-MAT", q: "Material Types in SAP?", a: "Classify materials: ROH (raw), HALB (semi-finished), FERT (finished), HIBE (operating supplies), DIEN (services).", detail: "Control: number range, price control (S/V), account category reference, procurement type.", tcode: "OMS2" },
+  { module: "MM-MAT", q: "Standard Price vs Moving Average Price?", a: "Standard (S): fixed price, variances posted to price diff account. Moving Avg (V): updates with each receipt.", detail: "S typically for manufactured goods, V for purchased materials. Configured in material type.", tcode: "" },
+
+  // === SAP MM - MRP ===
+  { module: "MM-MRP", q: "What is MRP (Material Requirements Planning)?", a: "Calculates material requirements based on demand, determines procurement proposals (planned orders, purchase requisitions).", detail: "MRP Types: MRP, Reorder Point, Forecast-based, Time-phased. Run: MD01 (total), MD02 (single item).", tcode: "MD01, MD02, MD04" },
+  { module: "MM-MRP", q: "What is a Lot Size?", a: "Rule determining order quantity in MRP. Fixed lot, Lot-for-lot, EOQ, periodic lot sizing.", detail: "Lot-for-lot (EX) = exact requirement. Fixed (FX) = always same qty. EOQ = economic order quantity.", tcode: "" },
+  { module: "MM-MRP", q: "Safety Stock?", a: "Buffer stock to cover unexpected demand or supply delays. MRP always plans to maintain this level.", detail: "Defined in MRP1 view of material master. Creates a procurement proposal when stock falls below.", tcode: "" },
+
+  // === SAP General/Cross-Module ===
+  { module: "BASIS", q: "Organizational Structure in SAP?", a: "Client → Company Code → Plant → Storage Location (MM) / Sales Org → Distribution Channel → Division (SD)", detail: "Client = highest level (data separation). Plant = key org unit for MM and PP.", tcode: "" },
+  { module: "BASIS", q: "What is a Transport Request?", a: "Container for moving configuration/development changes between SAP systems (DEV → QAS → PRD).", detail: "Types: Workbench (ABAP objects), Customizing (config). Released then imported by basis team.", tcode: "SE09, SE10, STMS" },
+  { module: "BASIS", q: "What is the IMG (Implementation Guide)?", a: "Hierarchical structure of all SAP customizing activities. The main tool for system configuration.", detail: "Access via SPRO. Project IMG = subset for specific implementation. Reference IMG = complete.", tcode: "SPRO" },
+];
+
+let currentModule = 'all';
+let currentMode = 'all';
+let deck = [];
+let pos = 0;
+let right = 0, wrong = 0, streak = 0;
+let hardCards = new Set(); // indices of cards marked wrong
+
+// Load hard cards from localStorage
+try {
+  const saved = JSON.parse(localStorage.getItem('sap-hard') || '[]');
+  hardCards = new Set(saved);
+} catch(e) {}
+
+function saveHard() {
+  localStorage.setItem('sap-hard', JSON.stringify([...hardCards]));
+}
+
+function getModules() {
+  const mods = new Set();
+  CARDS.forEach(c => mods.add(c.module));
+  return [...mods];
+}
+
+function buildModuleButtons() {
+  const el = document.getElementById('modules');
+  el.innerHTML = '<button class="mod-btn active" onclick="selectModule(\'all\')">ALL</button>';
+  getModules().forEach(m => {
+    el.innerHTML += `<button class="mod-btn" onclick="selectModule('${m}')">${m}</button>`;
+  });
+}
+
+function selectModule(mod) {
+  currentModule = mod;
+  document.querySelectorAll('.mod-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  buildDeck();
+}
+
+function setMode(mode) {
+  currentMode = mode;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  buildDeck();
+}
+
+function buildDeck() {
+  let pool = CARDS.map((c, i) => ({ ...c, idx: i }));
+  if (currentModule !== 'all') pool = pool.filter(c => c.module === currentModule);
+  if (currentMode === 'hard') pool = pool.filter(c => hardCards.has(c.idx));
+  if (currentMode === 'random') {
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+  }
+  deck = pool;
+  pos = 0;
+  right = 0; wrong = 0; streak = 0;
+  updateUI();
+  showCard();
+}
+
+function showCard() {
+  const card = document.getElementById('card');
+  card.classList.remove('flipped');
+  if (deck.length === 0) {
+    document.getElementById('front-label').textContent = 'NO CARDS';
+    document.getElementById('front-text').textContent = currentMode === 'hard' ? 'No hard cards yet. Study more!' : 'No cards in this module.';
+    return;
+  }
+  const c = deck[pos];
+  document.getElementById('front-label').textContent = c.module;
+  document.getElementById('front-text').textContent = c.q;
+  document.getElementById('back-label').textContent = 'ANSWER';
+  document.getElementById('back-text').textContent = c.a;
+  document.getElementById('back-detail').textContent = c.detail || '';
+  document.getElementById('back-tcode').textContent = c.tcode ? `T-Code: ${c.tcode}` : '';
+}
+
+function flipCard() {
+  document.getElementById('card').classList.toggle('flipped');
+}
+
+function markCard(correct) {
+  if (deck.length === 0) return;
+  const c = deck[pos];
+  if (correct) {
+    right++;
+    streak++;
+    hardCards.delete(c.idx);
+  } else {
+    wrong++;
+    streak = 0;
+    hardCards.add(c.idx);
+  }
+  saveHard();
+  pos = (pos + 1) % deck.length;
+  updateUI();
+  showCard();
+}
+
+function updateUI() {
+  document.getElementById('current').textContent = deck.length ? pos + 1 : 0;
+  document.getElementById('total').textContent = deck.length;
+  document.getElementById('right').textContent = right;
+  document.getElementById('wrong-count').textContent = wrong;
+  document.getElementById('streak').textContent = streak;
+  const pct = deck.length ? ((pos / deck.length) * 100) : 0;
+  document.getElementById('progress').style.width = pct + '%';
+}
+
+// Keyboard controls
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space') { e.preventDefault(); flipCard(); }
+  if (e.code === 'ArrowRight') markCard(true);
+  if (e.code === 'ArrowLeft') markCard(false);
+});
+
+// Swipe support
+let touchStartX = 0;
+document.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; });
+document.addEventListener('touchend', e => {
+  const diff = e.changedTouches[0].clientX - touchStartX;
+  if (Math.abs(diff) > 50) {
+    markCard(diff > 0); // swipe right = correct, left = wrong
+  }
+});
+
+// Init
+buildModuleButtons();
+buildDeck();
+</script>
+</body>
+</html>

@@ -1,8 +1,11 @@
 // Tab navigation
 document.querySelectorAll('nav a').forEach(link => {
   link.addEventListener('click', (e) => {
+    const href = link.getAttribute('href');
+    // Only handle hash links — let external links (music.html etc.) navigate normally
+    if (!href.startsWith('#')) return;
     e.preventDefault();
-    const target = link.getAttribute('href').slice(1);
+    const target = href.slice(1);
 
     document.querySelectorAll('nav a').forEach(l => l.classList.remove('active'));
     link.classList.add('active');

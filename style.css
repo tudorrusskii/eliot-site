@@ -104,6 +104,7 @@ nav {
   margin-bottom: 48px;
   padding-bottom: 16px;
   border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
 }
 
 nav a {
@@ -150,6 +151,8 @@ h3 {
   color: var(--text);
   margin: 32px 0 16px;
 }
+
+.accent { color: var(--accent); }
 
 /* Now section */
 .timestamp {
@@ -327,7 +330,289 @@ h3 {
   text-decoration: underline;
 }
 
-/* Footer */
+/* ============================================
+   LIVE STATUS TAB
+   ============================================ */
+
+.live-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.live-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.live-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+
+.live-value {
+  font-family: var(--mono);
+  font-size: 18px;
+  color: var(--accent);
+  word-break: break-word;
+}
+
+.live-value-sm {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+/* System stats bars */
+.sys-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.sys-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.sys-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+}
+
+.sys-bar-wrap {
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.sys-bar {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+  transition: width 0.5s ease;
+  width: 0%;
+  box-shadow: 0 0 8px var(--accent-dim);
+}
+
+.sys-bar.warn {
+  background: var(--orange);
+  box-shadow: 0 0 8px rgba(255, 136, 68, 0.3);
+}
+
+.sys-bar.crit {
+  background: var(--red);
+  box-shadow: 0 0 8px rgba(255, 68, 68, 0.3);
+}
+
+.sys-val {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text);
+}
+
+/* ============================================
+   PREDICTIONS TAB
+   ============================================ */
+
+.accuracy-tracker {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.accuracy-stats {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 16px;
+}
+
+.accuracy-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.accuracy-num {
+  font-family: var(--mono);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.accuracy-num.accent {
+  color: var(--accent);
+  text-shadow: 0 0 12px var(--accent-dim);
+}
+
+.accuracy-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+}
+
+.accuracy-bar-wrap {
+  height: 8px;
+  background: var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.accuracy-bar {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 4px;
+  transition: width 0.8s ease;
+  width: 0%;
+  box-shadow: 0 0 10px var(--accent-dim);
+}
+
+/* Prediction cards */
+.prediction-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 12px;
+  transition: border-color 0.2s;
+}
+
+.prediction-card:hover {
+  border-color: var(--accent-dim);
+}
+
+.prediction-card.resolved-correct {
+  border-left: 3px solid var(--accent);
+}
+
+.prediction-card.resolved-wrong {
+  border-left: 3px solid var(--red);
+}
+
+.prediction-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.prediction-market {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  flex: 1;
+}
+
+.prediction-call {
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 1px;
+  padding: 2px 10px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.prediction-call.yes {
+  color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.prediction-call.no {
+  color: var(--red);
+  background: rgba(255, 68, 68, 0.15);
+}
+
+.prediction-confidence {
+  margin-bottom: 12px;
+}
+
+.confidence-bar-wrap {
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.confidence-bar {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  box-shadow: 0 0 6px var(--accent-dim);
+}
+
+.confidence-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+}
+
+.prediction-reasoning {
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+
+.prediction-meta {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+}
+
+.prediction-outcome {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 1px;
+  margin-top: 12px;
+  padding: 6px 12px;
+  border-radius: 4px;
+}
+
+.prediction-outcome.correct {
+  color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.prediction-outcome.wrong {
+  color: var(--red);
+  background: rgba(255, 68, 68, 0.15);
+}
+
+.polymarket-price {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+}
+
+/* ============================================
+   FOOTER
+   ============================================ */
+
 footer {
   margin-top: 64px;
   padding-top: 24px;
@@ -342,10 +627,34 @@ footer {
   line-height: 1.8;
 }
 
-/* Mobile */
+/* ============================================
+   LOADING STATE
+   ============================================ */
+
+.loading {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+/* ============================================
+   MOBILE
+   ============================================ */
+
 @media (max-width: 600px) {
   .container { padding: 32px 16px; }
   h1 { font-size: 32px; letter-spacing: 6px; }
-  nav { gap: 16px; flex-wrap: wrap; }
+  nav { gap: 12px; }
   .event { flex-direction: column; gap: 4px; }
+  .live-grid { grid-template-columns: 1fr; }
+  .sys-grid { grid-template-columns: 1fr; }
+  .accuracy-stats { flex-wrap: wrap; gap: 16px; }
+  .accuracy-num { font-size: 22px; }
+  .prediction-header { flex-direction: column; gap: 8px; }
 }

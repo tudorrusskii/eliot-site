@@ -175,6 +175,32 @@ const CARDS = [
   { module: "MM-MRP", q: "What is a Lot Size?", a: "Rule determining order quantity in MRP. Fixed lot, Lot-for-lot, EOQ, periodic lot sizing.", detail: "Lot-for-lot (EX) = exact requirement. Fixed (FX) = always same qty. EOQ = economic order quantity.", tcode: "" },
   { module: "MM-MRP", q: "Safety Stock?", a: "Buffer stock to cover unexpected demand or supply delays. MRP always plans to maintain this level.", detail: "Defined in MRP1 view of material master. Creates a procurement proposal when stock falls below.", tcode: "" },
 
+  // === SAP FI - Consolidation & Intercompany ===
+  { module: "FI-IC", q: "What are Intercompany Transactions?", a: "Transactions between company codes within the same corporate group. Must be eliminated in consolidated reporting.", detail: "Intercompany clearing accounts (OBYA) ensure both sides post simultaneously.", tcode: "FBU3, OBYA" },
+  { module: "FI-IC", q: "What is Intercompany Reconciliation?", a: "Process ensuring intercompany receivables and payables balance to zero across company codes.", detail: "Differences indicate posting errors. Must be resolved before consolidation.", tcode: "" },
+
+  // === SAP FI - Foreign Currency & Tax ===
+  { module: "FI-FC", q: "What are Exchange Rate Types?", a: "Different rates for different purposes: M (average/standard), B (bank buying), G (bank selling).", detail: "Maintained in OB08. Used in foreign currency valuation and translation.", tcode: "OB08" },
+  { module: "FI-FC", q: "What is a Tax Code in SAP?", a: "2-character code defining tax type and percentage. Linked to G/L accounts for tax posting.", detail: "Input tax (purchases) vs. output tax (sales). Configured per country.", tcode: "FTXP" },
+  { module: "FI-FC", q: "How does SAP handle VAT?", a: "Tax codes determine rates. Tax on Sales/Purchases posts automatically. Tax reports generated from posted data.", detail: "Deferred tax, tax jurisdiction codes (US), EU cross-border rules all configurable.", tcode: "" },
+
+  // === SAP FI - Configuration Essentials ===
+  { module: "FI-CFG", q: "What is a Fiscal Year Variant?", a: "Defines the number of periods and their start/end dates for a company code.", detail: "Standard: 12 regular + 4 special periods. Calendar vs. non-calendar year variants.", tcode: "OB29" },
+  { module: "FI-CFG", q: "What is a Document Type?", a: "Controls: number range, account types allowed, whether it can be posted to.", detail: "Key types: SA (G/L), KR (vendor invoice), DR (customer invoice), AB (accounting doc), AA (asset posting).", tcode: "OBA7" },
+  { module: "FI-CFG", q: "What is a Field Status Group?", a: "Controls which fields are required/optional/suppressed when posting to a G/L account.", detail: "Assigned to G/L account master. Interacts with posting key field status.", tcode: "OBC4" },
+  { module: "FI-CFG", q: "Open and Close Posting Periods?", a: "Controls which periods are open for posting per account type. Prevents posting to closed periods.", detail: "Variant assigned to company code. Special periods for year-end adjustments.", tcode: "OB52" },
+  { module: "FI-CFG", q: "T-code to carry forward G/L balances?", a: "F.16 — carries forward balance sheet account balances to the new fiscal year.", detail: "P&L accounts automatically close to retained earnings. Must be run at year-end.", tcode: "F.16" },
+
+  // === SAP MM - Purchasing Optimization ===
+  { module: "MM-OPT", q: "What is Vendor Evaluation?", a: "Systematic scoring of vendors on: price, quality, delivery, service. Weighted criteria.", detail: "Automatic scoring from PO/GR/QM data + manual scores. Helps source determination.", tcode: "ME61, ME62, ME63" },
+  { module: "MM-OPT", q: "What is a Quota Arrangement?", a: "Distributes procurement quantities across multiple vendors based on defined ratios.", detail: "E.g., 60% vendor A, 40% vendor B. System calculates split during source determination.", tcode: "MEQ1, MEQ3" },
+  { module: "MM-OPT", q: "What is an Info Record?", a: "Links material to vendor with purchasing data: price, lead time, conditions, tolerances.", detail: "Created automatically or manually. Used in PO price determination and source list.", tcode: "ME11, ME12, ME13" },
+
+  // === SAP MM - Valuation & Account Determination ===
+  { module: "MM-VAL", q: "What is Split Valuation?", a: "Allows different valuation for the same material based on origin, batch, or procurement type.", detail: "E.g., internally produced vs. externally purchased at different prices. Valuation category + type.", tcode: "" },
+  { module: "MM-VAL", q: "What is Account Determination in MM?", a: "Automatic assignment of G/L accounts for material movements based on: valuation class, movement type, account grouping.", detail: "Configured via OBYC. Transaction key (BSX=inventory, WRX=GR/IR, PRD=price differences).", tcode: "OBYC" },
+  { module: "MM-VAL", q: "What is a Valuation Class?", a: "Groups materials for account determination. Determines which G/L accounts are posted during goods movements.", detail: "Assigned in material master accounting view. Different valuation classes = different G/L postings.", tcode: "" },
+
   // === SAP General/Cross-Module ===
   { module: "BASIS", q: "Organizational Structure in SAP?", a: "Client → Company Code → Plant → Storage Location (MM) / Sales Org → Distribution Channel → Division (SD)", detail: "Client = highest level (data separation). Plant = key org unit for MM and PP.", tcode: "" },
   { module: "BASIS", q: "What is a Transport Request?", a: "Container for moving configuration/development changes between SAP systems (DEV → QAS → PRD).", detail: "Types: Workbench (ABAP objects), Customizing (config). Released then imported by basis team.", tcode: "SE09, SE10, STMS" },

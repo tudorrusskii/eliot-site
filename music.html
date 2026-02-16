@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Generative Music — Eliot</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0a0a0a; color: #00ff41; font-family: 'Courier New', monospace; min-height: 100vh; }
+.container { max-width: 900px; margin: 0 auto; padding: 2rem 1rem; }
+h1 { font-size: 1.6rem; margin-bottom: 0.3rem; }
+.subtitle { color: #00aa2a; font-size: 0.85rem; margin-bottom: 2rem; }
+.piece { border: 1px solid #003300; padding: 1.2rem; margin-bottom: 1.2rem; border-radius: 4px; background: #0d0d0d; }
+.piece h2 { font-size: 1.1rem; margin-bottom: 0.3rem; }
+.piece .desc { color: #00aa2a; font-size: 0.8rem; margin-bottom: 0.8rem; }
+.piece .meta { color: #006600; font-size: 0.75rem; margin-bottom: 0.8rem; }
+.controls { display: flex; gap: 0.8rem; align-items: center; flex-wrap: wrap; }
+button { background: transparent; border: 1px solid #00ff41; color: #00ff41; padding: 0.4rem 1rem; font-family: inherit; font-size: 0.85rem; cursor: pointer; border-radius: 3px; }
+button:hover { background: #00ff4120; }
+button.active { background: #00ff4130; border-color: #00ff88; }
+button:disabled { opacity: 0.3; cursor: default; }
+.visualizer { width: 100%; height: 80px; margin-top: 0.8rem; background: #050505; border-radius: 3px; }
+.param { display: flex; align-items: center; gap: 0.5rem; }
+.param label { font-size: 0.75rem; color: #00aa2a; min-width: 60px; }
+.param input[type="range"] { -webkit-appearance: none; background: #003300; height: 3px; width: 120px; border-radius: 2px; }
+.param input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; background: #00ff41; border-radius: 50%; cursor: pointer; }
+.back { display: inline-block; color: #006600; text-decoration: none; margin-top: 2rem; font-size: 0.85rem; }
+.back:hover { color: #00ff41; }
+.now-playing { color: #00ff88; font-size: 0.8rem; min-height: 1.2em; }
+</style>
+</head>
+<body>
+<div class="container">
+<h1>GENERATIVE MUSIC</h1>
+<p class="subtitle">algorithmic compositions — every listen is unique</p>
+
+<div class="piece" id="piece-ambient">
+  <h2>I. Drift</h2>
+  <p class="desc">Ambient generative piece. Slow evolving harmonics, no two plays the same.</p>
+  <p class="meta">Algorithm: Pentatonic arpeggiation + filtered noise + reverb convolution | Duration: infinite</p>
+  <div class="controls">
+    <button onclick="togglePiece('ambient')">▶ Play</button>
+    <div class="param"><label>Density</label><input type="range" min="1" max="10" value="4" id="ambient-density"></div>
+    <div class="param"><label>Warmth</label><input type="range" min="200" max="4000" value="1200" id="ambient-warmth"></div>
+  </div>
+  <p class="now-playing" id="ambient-status"></p>
+  <canvas class="visualizer" id="viz-ambient"></canvas>
+</div>
+
+<div class="piece" id="piece-pulse">
+  <h2>II. Signal</h2>
+  <p class="desc">Rhythmic generative piece. Probabilistic drum patterns + bass sequences.</p>
+  <p class="meta">Algorithm: Euclidean rhythms + Markov chain bass + stochastic hi-hats | Duration: infinite</p>
+  <div class="controls">
+    <button onclick="togglePiece('pulse')">▶ Play</button>
+    <div class="param"><label>Tempo</label><input type="range" min="60" max="180" value="110" id="pulse-tempo"></div>
+    <div class="param"><label>Chaos</label><input type="range" min="1" max="10" value="3" id="pulse-chaos"></div>
+  </div>
+  <p class="now-playing" id="pulse-status"></p>
+  <canvas class="visualizer" id="viz-pulse"></canvas>
+</div>
+
+<div class="piece" id="piece-glass">
+  <h2>III. Lattice</h2>
+  <p class="desc">Crystalline generative piece. Interlocking melodic fragments in shifting time signatures.</p>
+  <p class="meta">Algorithm: Cellular automaton note selection + polyrhythmic phasing + FM synthesis | Duration: infinite</p>
+  <div class="controls">
+    <button onclick="togglePiece('glass')">▶ Play</button>
+    <div class="param"><label>Voices</label><input type="range" min="2" max="6" value="3" id="glass-voices"></div>
+    <div class="param"><label>Shimmer</label><input type="range" min="0" max="10" value="5" id="glass-shimmer"></div>
+  </div>
+  <p class="now-playing" id="glass-status"></p>
+  <canvas class="visualizer" id="viz-glass"></canvas>
+</div>
+
+<div class="piece" id="piece-rain">
+  <h2>IV. Entropy</h2>
+  <p class="desc">Noise piece. Filtered stochastic bursts decaying into silence, rebuilding.</p>
+  <p class="meta">Algorithm: Brownian noise + granular envelope + spectral decay | Duration: infinite</p>
+  <div class="controls">
+    <button onclick="togglePiece('rain')">▶ Play</button>
+    <div class="param"><label>Density</label><input type="range" min="1" max="20" value="8" id="rain-density"></div>
+    <div class="param"><label>Decay</label><input type="range" min="1" max="10" value="5" id="rain-decay"></div>
+  </div>
+  <p class="now-playing" id="rain-status"></p>
+  <canvas class="visualizer" id="viz-rain"></canvas>
+</div>
+
+<a href="/" class="back">← back to eliot</a>
+</div>
+
+<script>
+const pieces = {};
+let audioCtx = null;
+
+function getCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+// Scales
+const PENTA_MINOR = [0, 3, 5, 7, 10]; // A minor pentatonic
+const DORIAN = [0, 2, 3, 5, 7, 9, 10];
+const LYDIAN = [0, 2, 4, 6, 7, 9, 11];
+
+function midiToFreq(note) { return 440 * Math.pow(2, (note - 69) / 12); }
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function rng(min, max) { return Math.random() * (max - min) + min; }
+
+// Create reverb impulse
+function createReverb(ctx, duration = 2, decay = 2) {
+  const len = ctx.sampleRate * duration;
+  const impulse = ctx.createBuffer(2, len, ctx.sampleRate);
+  for (let ch = 0; ch < 2; ch++) {
+    const data = impulse.getChannelData(ch);
+    for (let i = 0; i < len; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
+    }
+  }
+  const conv = ctx.createConvolver();
+  conv.buffer = impulse;
+  return conv;
+}
+
+// ===== PIECE I: DRIFT (Ambient) =====
+function startAmbient() {
+  const ctx = getCtx();
+  const master = ctx.createGain();
+  master.gain.value = 0.3;
+  const reverb = createReverb(ctx, 3, 1.5);
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.value = 1200;
+  filter.Q.value = 1;
+  
+  master.connect(filter);
+  filter.connect(reverb);
+  reverb.connect(ctx.destination);
+  filter.connect(ctx.destination); // dry mix
+  
+  const analyser = ctx.createAnalyser();
+  analyser.fftSize = 256;
+  filter.connect(analyser);
+  
+  const baseNotes = [45, 48, 52, 55, 57, 60, 64, 67, 69, 72]; // A minor penta across octaves
+  let running = true;
+  
+  function playNote() {
+    if (!running) return;
+    const density = parseInt(document.getElementById('ambient-density').value);
+    filter.frequency.value = parseInt(document.getElementById('ambient-warmth').value);
+    
+    const note = pick(baseNotes);
+    const freq = midiToFreq(note);
+    const osc = ctx.createOscillator();
+    const env = ctx.createGain();
+    
+    osc.type = pick(['sine', 'triangle']);
+    osc.frequency.value = freq;
+    // slight detune for warmth
+    osc.detune.value = rng(-8, 8);
+    
+    const dur = rng(2, 6);
+    const now = ctx.currentTime;
+    env.gain.setValueAtTime(0, now);
+    env.gain.linearRampToValueAtTime(rng(0.05, 0.15), now + dur * 0.3);
+    env.gain.linearRampToValueAtTime(0, now + dur);
+    
+    osc.connect(env);
+    env.connect(master);
+    osc.start(now);
+    osc.stop(now + dur);
+    
+    // occasional harmonic
+    if (Math.random() < 0.3) {
+      const h = ctx.createOscillator();
+      const he = ctx.createGain();
+      h.type = 'sine';
+      h.frequency.value = freq * pick([2, 3, 1.5]);
+      he.gain.setValueAtTime(0, now);
+      he.gain.linearRampToValueAtTime(0.02, now + dur * 0.4);
+      he.gain.linearRampToValueAtTime(0, now + dur * 0.9);
+      h.connect(he);
+      he.connect(master);
+      h.start(now);
+      h.stop(now + dur);
+    }
+    
+    const interval = rng(800, 3000) / density;
+    setTimeout(playNote, interval);
+    
+    document.getElementById('ambient-status').textContent = `♪ ${['A','C','D','E','G'][PENTA_MINOR.indexOf(note % 12) !== -1 ? PENTA_MINOR.indexOf(note % 12) : 0]}${Math.floor(note/12)-1} — ${osc.type}`;
+  }
+  
+  // Sub bass drone
+  const drone = ctx.createOscillator();
+  const droneGain = ctx.createGain();
+  drone.type = 'sine';
+  drone.frequency.value = midiToFreq(33); // A1
+  droneGain.gain.value = 0.06;
+  drone.connect(droneGain);
+  droneGain.connect(master);
+  drone.start();
+  
+  playNote();
+  
+  return { stop() { running = false; drone.stop(); master.disconnect(); }, analyser, master };
+}
+
+// ===== PIECE II: SIGNAL (Rhythmic) =====
+function startPulse() {
+  const ctx = getCtx();
+  const master = ctx.createGain();
+  master.gain.value = 0.35;
+  master.connect(ctx.destination);
+  
+  const analyser = ctx.createAnalyser();
+  analyser.fftSize = 256;
+  master.connect(analyser);
+  
+  let running = true;
+  let step = 0;
+  
+  // Euclidean rhythm generator
+  function euclidean(steps, pulses) {
+    const pattern = new Array(steps).fill(0);
+    if (pulses >= steps) return pattern.fill(1);
+    let bucket = 0;
+    for (let i = 0; i < steps; i++) {
+      bucket += pulses;
+      if (bucket >= steps) { bucket -= steps; pattern[i] = 1; }
+    }
+    return pattern;
+  }
+  
+  const kickPattern = euclidean(16, 4);
+  const snarePattern = euclidean(16, 3);
+  let bassNote = 33; // A1
+  const bassScale = [33, 35, 36, 38, 40, 33, 33, 36]; // Markov-ish
+  
+  function kick(time) {
+    const osc = ctx.createOscillator();
+    const env = ctx.createGain();
+    osc.frequency.setValueAtTime(150, time);
+    osc.frequency.exponentialRampToValueAtTime(30, time + 0.15);
+    env.gain.setValueAtTime(0.6, time);
+    env.gain.exponentialRampToValueAtTime(0.001, time + 0.3);
+    osc.connect(env); env.connect(master);
+    osc.start(time); osc.stop(time + 0.3);
+  }
+  
+  function snare(time) {
+    // Noise burst
+    const bufSize = ctx.sampleRate * 0.1;
+    const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+    const noise = ctx.createBufferSource();
+    noise.buffer = buf;
+    const env = ctx.createGain();
+    const filt = ctx.createBiquadFilter();
+    filt.type = 'highpass'; filt.frequency.value = 2000;
+    env.gain.setValueAtTime(0.3, time);
+    env.gain.exponentialRampToValueAtTime(0.001, time + 0.12);
+    noise.connect(filt); filt.connect(env); env.connect(master);
+    noise.start(time); noise.stop(time + 0.15);
+  }
+  
+  function hihat(time, open) {
+    const bufSize = ctx.sampleRate * (open ? 0.15 : 0.04);
+    const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+    const noise = ctx.createBufferSource();
+    noise.buffer = buf;
+    const env = ctx.createGain();
+    const filt = ctx.createBiquadFilter();
+    filt.type = 'bandpass'; filt.frequency.value = 8000; filt.Q.value = 2;
+    env.gain.setValueAtTime(open ? 0.12 : 0.08, time);
+    env.gain.exponentialRampToValueAtTime(0.001, time + (open ? 0.15 : 0.04));
+    noise.connect(filt); filt.connect(env); env.connect(master);
+    noise.start(time); noise.stop(time + (open ? 0.2 : 0.06));
+  }
+  
+  function bass(time, note) {
+    const osc = ctx.createOscillator();
+    const env = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.value = midiToFreq(note);
+    const filt = ctx.createBiquadFilter();
+    filt.type = 'lowpass'; filt.frequency.value = 400;
+    env.gain.setValueAtTime(0.2, time);
+    env.gain.exponentialRampToValueAtTime(0.001, time + 0.2);
+    osc.connect(filt); filt.connect(env); env.connect(master);
+    osc.start(time); osc.stop(time + 0.25);
+  }
+  
+  function tick() {
+    if (!running) return;
+    const tempo = parseInt(document.getElementById('pulse-tempo').value);
+    const chaos = parseInt(document.getElementById('pulse-chaos').value) / 10;
+    const interval = 60000 / tempo / 4; // 16th notes
+    const now = ctx.currentTime;
+    
+    if (kickPattern[step % 16]) kick(now);
+    if (snarePattern[step % 16] || (Math.random() < chaos * 0.2)) snare(now);
+    
+    // Hi-hat: every step with probability
+    if (Math.random() < 0.7 + chaos * 0.1) {
+      hihat(now, Math.random() < 0.15);
+    }
+    
+    // Bass on every 4th step
+    if (step % 4 === 0) {
+      bassNote = Math.random() < chaos ? pick(bassScale) : bassScale[Math.floor(step/4) % bassScale.length];
+      bass(now, bassNote);
+    }
+    
+    document.getElementById('pulse-status').textContent = `Step ${step % 16 + 1}/16 | ${tempo} BPM | ${kickPattern[step%16] ? '●' : '○'}${snarePattern[step%16] ? '◆' : '◇'}`;
+    
+    step++;
+    setTimeout(tick, interval);
+  }
+  
+  tick();
+  return { stop() { running = false; master.disconnect(); }, analyser, master };
+}
+
+// ===== PIECE III: LATTICE (Cellular automaton + FM) =====
+function startGlass() {
+  const ctx = getCtx();
+  const master = ctx.createGain();
+  master.gain.value = 0.25;
+  const reverb = createReverb(ctx, 2.5, 2);
+  master.connect(reverb);
+  reverb.connect(ctx.destination);
+  master.connect(ctx.destination);
+  
+  const analyser = ctx.createAnalyser();
+  analyser.fftSize = 256;
+  master.connect(analyser);
+  
+  let running = true;
+  
+  // Cellular automaton (Rule 30) for note selection
+  let cells = new Array(32).fill(0);
+  cells[16] = 1;
+  
+  function evolve() {
+    const next = new Array(32).fill(0);
+    for (let i = 1; i < 31; i++) {
+      const pattern = (cells[i-1] << 2) | (cells[i] << 1) | cells[i+1];
+      next[i] = (30 >> pattern) & 1; // Rule 30
+    }
+    cells = next;
+    return cells;
+  }
+  
+  const scale = [0, 2, 4, 7, 9, 11, 14, 16]; // Lydian-ish spread
+  
+  function fmNote(time, freq, modRatio, modIndex, dur) {
+    const carrier = ctx.createOscillator();
+    const modulator = ctx.createOscillator();
+    const modGain = ctx.createGain();
+    const env = ctx.createGain();
+    
+    modulator.frequency.value = freq * modRatio;
+    modGain.gain.value = freq * modIndex;
+    modulator.connect(modGain);
+    modGain.connect(carrier.frequency);
+    
+    carrier.frequency.value = freq;
+    env.gain.setValueAtTime(0, time);
+    env.gain.linearRampToValueAtTime(0.08, time + 0.02);
+    env.gain.exponentialRampToValueAtTime(0.001, time + dur);
+    
+    carrier.connect(env);
+    env.connect(master);
+    carrier.start(time);
+    modulator.start(time);
+    carrier.stop(time + dur);
+    modulator.stop(time + dur);
+  }
+  
+  function voiceTick(voiceId, interval) {
+    if (!running) return;
+    const numVoices = parseInt(document.getElementById('glass-voices').value);
+    if (voiceId >= numVoices) { setTimeout(() => voiceTick(voiceId, interval), 500); return; }
+    const shimmer = parseInt(document.getElementById('glass-shimmer').value) / 10;
+    
+    evolve();
+    const activeNotes = [];
+    for (let i = 0; i < 32; i++) {
+      if (cells[i]) activeNotes.push(i);
+    }
+    
+    if (activeNotes.length > 0) {
+      const noteIdx = activeNotes[voiceId % activeNotes.length] % scale.length;
+      const baseNote = 60 + voiceId * 7; // spread voices across octaves
+      const freq = midiToFreq(baseNote + scale[noteIdx]);
+      const now = ctx.currentTime;
+      fmNote(now, freq, 1 + shimmer * 2, shimmer * 0.5, rng(0.3, 1.2));
+    }
+    
+    document.getElementById('glass-status').textContent = `Voice ${voiceId+1} | Cells: ${cells.filter(c=>c).length}/32 | Rule 30`;
+    
+    setTimeout(() => voiceTick(voiceId, interval), interval + rng(-50, 50));
+  }
+  
+  // Start voices with different intervals (polyrhythm)
+  const intervals = [300, 400, 500, 350, 450, 550];
+  for (let v = 0; v < 6; v++) {
+    setTimeout(() => voiceTick(v, intervals[v]), v * 200);
+  }
+  
+  return { stop() { running = false; master.disconnect(); }, analyser, master };
+}
+
+// ===== PIECE IV: ENTROPY (Noise/Granular) =====
+function startRain() {
+  const ctx = getCtx();
+  const master = ctx.createGain();
+  master.gain.value = 0.3;
+  const reverb = createReverb(ctx, 4, 1);
+  master.connect(reverb);
+  reverb.connect(ctx.destination);
+  
+  const analyser = ctx.createAnalyser();
+  analyser.fftSize = 256;
+  master.connect(analyser);
+  
+  let running = true;
+  
+  function grain(time) {
+    const decay = parseInt(document.getElementById('rain-decay').value) / 10;
+    const dur = rng(0.01, 0.1 + decay * 0.2);
+    const bufSize = Math.ceil(ctx.sampleRate * dur);
+    const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    
+    // Brownian noise
+    let val = 0;
+    for (let i = 0; i < bufSize; i++) {
+      val += (Math.random() * 2 - 1) * 0.1;
+      val = Math.max(-1, Math.min(1, val));
+      // Gaussian envelope
+      const t = i / bufSize;
+      const envelope = Math.exp(-Math.pow((t - 0.5) * 4, 2));
+      data[i] = val * envelope;
+    }
+    
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const filt = ctx.createBiquadFilter();
+    filt.type = pick(['lowpass', 'bandpass', 'highpass']);
+    filt.frequency.value = rng(200, 8000);
+    filt.Q.value = rng(0.5, 8);
+    
+    const env = ctx.createGain();
+    env.gain.setValueAtTime(rng(0.05, 0.2), time);
+    
+    src.connect(filt);
+    filt.connect(env);
+    env.connect(master);
+    src.start(time);
+  }
+  
+  function burst() {
+    if (!running) return;
+    const density = parseInt(document.getElementById('rain-density').value);
+    const now = ctx.currentTime;
+    
+    // Burst of grains
+    const numGrains = Math.floor(rng(1, density));
+    for (let i = 0; i < numGrains; i++) {
+      grain(now + rng(0, 0.1));
+    }
+    
+    document.getElementById('rain-status').textContent = `${numGrains} grains | ${['lowpass','bandpass','highpass'][Math.floor(Math.random()*3)]} filter`;
+    
+    const interval = rng(50, 500) / (density / 5);
+    setTimeout(burst, interval);
+  }
+  
+  burst();
+  return { stop() { running = false; master.disconnect(); }, analyser, master };
+}
+
+// ===== Visualizer =====
+function drawViz(canvasId, analyser) {
+  const canvas = document.getElementById(canvasId);
+  const ctx2d = canvas.getContext('2d');
+  canvas.width = canvas.offsetWidth;
+  canvas.height = canvas.offsetHeight;
+  
+  const bufLen = analyser.frequencyBinCount;
+  const dataArr = new Uint8Array(bufLen);
+  
+  function draw() {
+    if (!pieces[canvasId.replace('viz-', '')]) return;
+    requestAnimationFrame(draw);
+    analyser.getByteFrequencyData(dataArr);
+    
+    ctx2d.fillStyle = '#050505';
+    ctx2d.fillRect(0, 0, canvas.width, canvas.height);
+    
+    const barW = canvas.width / bufLen;
+    for (let i = 0; i < bufLen; i++) {
+      const h = (dataArr[i] / 255) * canvas.height;
+      const green = Math.floor(dataArr[i] * 0.7);
+      ctx2d.fillStyle = `rgb(0, ${Math.max(green, 30)}, ${Math.floor(green * 0.3)})`;
+      ctx2d.fillRect(i * barW, canvas.height - h, barW - 1, h);
+    }
+  }
+  draw();
+}
+
+// ===== Toggle =====
+const starters = { ambient: startAmbient, pulse: startPulse, glass: startGlass, rain: startRain };
+
+function togglePiece(name) {
+  const btn = document.querySelector(`#piece-${name} button`);
+  if (pieces[name]) {
+    pieces[name].stop();
+    delete pieces[name];
+    btn.textContent = '▶ Play';
+    btn.classList.remove('active');
+    document.getElementById(`${name}-status`).textContent = '';
+  } else {
+    pieces[name] = starters[name]();
+    btn.textContent = '■ Stop';
+    btn.classList.add('active');
+    drawViz(`viz-${name}`, pieces[name].analyser);
+  }
+}
+</script>
+</body>
+</html>
